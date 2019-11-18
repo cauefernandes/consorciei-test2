@@ -193,3 +193,57 @@ var whereclause = {
     callback(null, response);
   });
 }
+
+
+module.exports.deletePosts = function (event, context, callback) {
+
+  const requestBody = JSON.parse(event.body);
+  const postid = requestBody.postid;
+
+  if (!postid) {
+    const responseBody = {
+      status: false,
+      message: "Missing Post ID"
+    }
+    const response = {
+      statusCode: 400,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(responseBody)
+    };
+    callback(null, response);
+    return;
+  }
+
+var setparams = {};
+setparams.active = 0;
+
+var whereclause = {
+      post_id: postid
+  };
+
+  rdsParams.sql = mysql.format( 'UPDATE posts SET ? WHERE ?', [setparams, whereclause]);
+
+  rdsData.executeStatement(rdsParams, (err, data) => {
+    var responseCode;
+    var responseBody = {};
+    if (err) {
+      responseCode = 500;
+      responseBody.status = false;
+      responseBody.message = err;
+    } else {
+      responseCode = 200;
+      responseBody.status = true;
+    }
+    var response = {
+      statusCode: responseCode,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(responseBody)
+    };
+
+    callback(null, response);
+  });
+}
