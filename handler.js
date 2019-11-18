@@ -70,3 +70,55 @@ module.exports.createUser = function (event, context, callback) {
     callback(null, response);
   });
 }
+
+
+module.exports.createPosts = function (event, context, callback) {
+
+  const requestBody = JSON.parse(event.body);
+  const title = requestBody.title;
+  const subtitle = requestBody.subtitle;
+  const content = requestBody.content;
+  const imgurl = requestBody.imgUrl;
+
+  if (!title || !subtitle || !content) {
+    const responseBody = {
+      status: false,
+      message: "Missing parameters"
+    }
+    const response = {
+      statusCode: 400,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(responseBody)
+    };
+    callback(null, response);
+    return;
+  }
+
+
+  rdsParams.sql = `INSERT INTO posts (title, subtitle, content, imgUrl) VALUES \
+    ('${title}', '${subtitle}', '${content}', '${imgurl}')`;
+
+  rdsData.executeStatement(rdsParams, (err, data) => {
+    var responseCode;
+    var responseBody = {};
+    if (err) {
+      responseCode = 500;
+      responseBody.status = false;
+      responseBody.message = err;
+    } else {
+      responseCode = 200;
+      responseBody.status = true;
+    }
+    var response = {
+      statusCode: responseCode,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(responseBody)
+    };
+
+    callback(null, response);
+  });
+}
