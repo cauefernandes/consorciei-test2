@@ -16,15 +16,52 @@ const data = require('data-api-client')({
   secretArn: process.env.DB_SECRET_ARN,
   database: "cms",
 })
-
+const jwtSign = require('./authorizer').signSync;
 
 
 module.exports.login = function (event, context, callback) {
-  rdsParams.sql = "select * from groups";
+  const requestBody = JSON.parse(event.body);
+  const username = requestBody.username;
+  const password = requestBody.password;
+
+  if (!username || !password) {
+    const responseBody = {
+      message: "Missing credentials"
+    }
+    const response = {
+      statusCode: 400,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(responseBody)
+    };
+    callback(null, response);
+    return;
+  }
+
+  const passwordSalt = process.env.PASSWORD_SALT;
+  const passwordHash = crypto.pbkdf2Sync(password, passwordSalt, 1000, 64, 'sha512').toString('hex');
+  rdsParams.sql = `select accessGroupId from users where username='${username}' and password='${passwordHash}'`;
 
   rdsData.executeStatement(rdsParams, (err, data) => {
-    console.log(err);
-    callback(err, data.records);
+    var responseCode;
+    var responseBody = {};
+    if (err || !data.records || data.records.length == 0) {
+      responseCode = 500;
+      responseBody.message = err || "Invalid credentials";
+    } else {
+      responseCode = 200;
+      responseBody.jwt = jwtSign(username, data.records[0][0].longValue);
+    }
+    var response = {
+      statusCode: responseCode,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(responseBody)
+    };
+
+    callback(null, response);
   });
 }
 

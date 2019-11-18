@@ -30,7 +30,7 @@ provider:
     DB_RESOURCE_ARN: arn:aws:rds:us-east-1:918810475415:cluster:cms-database
     DB_SECRET_ARN: ${file(./serverless.env.yml):dev.DB_SECRET_ARN}
     PASSWORD_SALT: post-cms-2019
-
+    JWT_SECRET: post-cms-2019
 
 functions:
   login:
@@ -50,12 +50,27 @@ functions:
         - secretsmanager:GetSecretValue
       Resource: ${self:provider.environment.DB_SECRET_ARN}
 
+  auth:
+    handler: authorizer.auth
+    iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - rds-data:ExecuteStatement
+      Resource: "*"
+    - Effect: Allow
+      Action:
+        - secretsmanager:GetSecretValue
+      Resource: ${self:provider.environment.DB_SECRET_ARN}
+
+
+
   createUser:
     handler: handler.createUser
     events:
     - http:
         path: user
         method: post
+        authorizer: auth    
     iamRoleStatements:
     - Effect: Allow
       Action:
