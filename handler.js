@@ -283,3 +283,44 @@ try{
 
     callback(null, response);
 }
+
+module.exports.getPostsbyID = async function (event, context, callback) {
+
+  if (!("queryStringParameters" in event) || !(event.queryStringParameters) || !(event.queryStringParameters.id)) {
+      const response = {
+          statusCode: 500,
+          body: JSON.stringify({
+              status: false,
+              message: 'Missing Query String Parameters defined'
+          })
+      };
+      return response;
+  }
+
+  const postid = event.queryStringParameters.id;
+
+try{
+  let result = await data.query(`SELECT * FROM posts where post_id = ${postid} and active = 1;`)
+    var responseBody = {};
+    var responseCode = 200;
+      responseBody.status = true;
+
+      responseBody.body = result.records;
+    }
+    catch(err){
+      responseCode = 500;
+      responseBody.status = false;
+      responseBody.message = err;
+    }
+
+
+    var response = {
+      statusCode: responseCode,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(responseBody)
+    };
+
+    callback(null, response);
+}

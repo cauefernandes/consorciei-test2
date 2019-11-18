@@ -134,6 +134,23 @@ functions:
         - secretsmanager:GetSecretValue
       Resource: ${self:provider.environment.DB_SECRET_ARN}
 
+  getPostsbyID:
+    handler: handler.getPostsbyID
+    events:
+    - http:
+        path: posts
+        method: get
+    iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - rds-data:ExecuteStatement
+        - rds-data:BatchExecuteStatement
+      Resource: "*"
+    - Effect: Allow
+      Action:
+        - secretsmanager:GetSecretValue
+      Resource: ${self:provider.environment.DB_SECRET_ARN}
+
 
 plugins:
   - serverless-iam-roles-per-function
