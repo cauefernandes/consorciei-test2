@@ -1,0 +1,71 @@
+# Welcome to Serverless!
+#
+# This file is the main config file for your service.
+# It's very minimal at this point and uses default values.
+# You can always add more config options for more control.
+# We've included some commented out config examples here.
+# Just uncomment any of them to get that config option.
+#
+# For full config options, check the docs:
+#    docs.serverless.com
+#
+# Happy Coding!
+
+service: post-cms
+# app and org for use with dashboard.serverless.com
+#app: your-app-name
+#org: your-org-name
+
+# You can pin your service to only deploy with a specific Serverless version
+# Check out our docs for more details
+# frameworkVersion: "=X.X.X"
+
+provider:
+  name: aws
+  runtime: nodejs10.x
+  stage: dev
+  region: us-east-1
+  environment:
+    DB_NAME: consorciei
+    DB_RESOURCE_ARN: arn:aws:rds:us-east-1:918810475415:cluster:cms-database
+    DB_SECRET_ARN: ${file(./serverless.env.yml):dev.DB_SECRET_ARN}
+    PASSWORD_SALT: post-cms-2019
+
+
+functions:
+  login:
+    handler: handler.login
+    events:
+    - http:
+        path: login
+        method: post
+    iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - rds-data:ExecuteStatement
+        - rds-data:BatchExecuteStatement
+      Resource: "*"
+    - Effect: Allow
+      Action:
+        - secretsmanager:GetSecretValue
+      Resource: ${self:provider.environment.DB_SECRET_ARN}
+
+  createUser:
+    handler: handler.createUser
+    events:
+    - http:
+        path: user
+        method: post
+    iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - rds-data:ExecuteStatement
+      Resource: "*"
+    - Effect: Allow
+      Action:
+        - secretsmanager:GetSecretValue
+      Resource: ${self:provider.environment.DB_SECRET_ARN}
+
+
+plugins:
+  - serverless-iam-roles-per-function
