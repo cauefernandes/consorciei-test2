@@ -11,6 +11,13 @@ const rdsParams = {
   sql: "",
 };
 
+const data = require('data-api-client')({
+  resourceArn: process.env.DB_RESOURCE_ARN,
+  secretArn: process.env.DB_SECRET_ARN,
+  database: "cms",
+})
+
+
 
 module.exports.login = function (event, context, callback) {
   rdsParams.sql = "select * from groups";
@@ -246,4 +253,33 @@ var whereclause = {
 
     callback(null, response);
   });
+}
+
+
+module.exports.getPosts = async function (event, context, callback) {
+
+try{
+  let result = await data.query(`SELECT * FROM posts where active = 1;`)
+    var responseBody = {};
+    var responseCode = 200;
+      responseBody.status = true;
+
+      responseBody.body = result.records;
+    }
+    catch(err){
+      responseCode = 500;
+      responseBody.status = false;
+      responseBody.message = err;
+    }
+
+
+    var response = {
+      statusCode: responseCode,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(responseBody)
+    };
+
+    callback(null, response);
 }
