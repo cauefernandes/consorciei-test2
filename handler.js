@@ -1,6 +1,7 @@
 'use strict';
 
 const crypto = require('crypto');
+const mysql = require( 'mysql' );
 const { RDSData } = require("@aws-sdk/client-rds-data-node/RDSData");
 const rdsData = new RDSData({});
 const rdsParams = {
@@ -99,6 +100,76 @@ module.exports.createPosts = function (event, context, callback) {
 
   rdsParams.sql = `INSERT INTO posts (title, subtitle, content, imgUrl) VALUES \
     ('${title}', '${subtitle}', '${content}', '${imgurl}')`;
+
+  rdsData.executeStatement(rdsParams, (err, data) => {
+    var responseCode;
+    var responseBody = {};
+    if (err) {
+      responseCode = 500;
+      responseBody.status = false;
+      responseBody.message = err;
+    } else {
+      responseCode = 200;
+      responseBody.status = true;
+    }
+    var response = {
+      statusCode: responseCode,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(responseBody)
+    };
+
+    callback(null, response);
+  });
+}
+
+
+module.exports.updatePosts = function (event, context, callback) {
+
+  const requestBody = JSON.parse(event.body);
+  const postid = requestBody.postid;
+  const title = requestBody.title;
+  const subtitle = requestBody.subtitle;
+  const content = requestBody.content;
+  const imgurl = requestBody.imgUrl;
+
+  if (!postid) {
+    const responseBody = {
+      status: false,
+      message: "Missing Post ID"
+    }
+    const response = {
+      statusCode: 400,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(responseBody)
+    };
+    callback(null, response);
+    return;
+  }
+
+var setparams = {};
+
+if(title){
+  setparams.title = title;
+}
+if(subtitle){
+  setparams.subtitle = subtitle;
+}
+if(content){
+  setparams.content = content;
+}
+if(imgurl){
+  setparams.imgurl = imgurl;
+}
+
+var whereclause = {
+      post_id: postid
+  };
+
+  rdsParams.sql = mysql.format( 'UPDATE posts SET ? WHERE ?', [setparams, whereclause]);
 
   rdsData.executeStatement(rdsParams, (err, data) => {
     var responseCode;
